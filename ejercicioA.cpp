@@ -73,14 +73,14 @@ vector<int> back_edges_con_extremo_superior_en;
 vector<int> back_edges_con_extremo_inferior_en;
 vector<int> memo;
 
-void dfs(int v, int p = -1) {
+void dfs(int v, int p = -1, const vector<vector<int>>& ady_temporal) {
     estado[v] = EMPECE_A_VER;
     for (int u : ady[v]) {
         if (u == p) continue; 
         if (estado[u] == NO_LO_VI) {
             tree_edges[v].push_back(u);
             padre[u] = v;
-            dfs(u, v);
+            dfs(u, v, ady_temporal);
         } else if (u != padre[v]) {
             if (estado[u] == EMPECE_A_VER) {
                 back_edges_con_extremo_superior_en[v]++;
@@ -159,6 +159,8 @@ void Kruskal_Mod( int n, int m, vector<tuple<int, int, int>>& aristas, vector<in
         }
         else { //Tengo problemas de memoria en esta parte de Kruskal
 
+            vector<vector<int>> ady_temporal(n + 1);
+
             for (int index : grupo_actual) {
 
                 int u = get<1>(aristas[index]);
@@ -166,34 +168,41 @@ void Kruskal_Mod( int n, int m, vector<tuple<int, int, int>>& aristas, vector<in
 
                 if (dsu_temporal.findSet(u) != dsu_temporal.findSet(v)) {
 
-                    dsu_temporal.unionByRank(u, v);
-
-                    estado.assign(n + 1, NO_LO_VI); 
-                    back_edges_con_extremo_superior_en.assign(n + 1, 0); 
-                    back_edges_con_extremo_inferior_en.assign(n + 1, 0); 
-                    memo.assign(n + 1, -1); 
-                    tree_edges.assign(n + 1, vector<int>()); 
-                    padre.assign(n + 1, -1);
-
-                    dfs(u); // Hacemos DFS en el grafo que se crea con el DSU temporal
-
-                    if (cubren(u, -1) == 0) {
-                        res[index] = "any";
-                    }
-
-                    else {
-                        res[index] = "at least one";
-                    }
+                    ady_temporal[u].push_back(v);
+                    ady_temporal[v].push_back(u);
 
                 }
 
-                else {
-                    res[index] = "none";
-                } 
             }
             // Actualizamos el DSU principal con las aristas que no generaron ciclos
             for (int index : grupo_actual) {
 
+                int u = get<1>(aristas[index]);
+                int v = get<2>(aristas[index]);
+
+                if (dsu_temporal.findSet(u) != dsu_temporal.findSet(v)) {
+                    dsu_temporal.unionByRank(u, v);
+
+                    estado.assign(n + 1, NO_LO_VI);
+                    back_edges_con_extremo_superior_en.assign(n + 1, 0);
+                    back_edges_con_extremo_inferior_en.assign(n + 1, 0);
+                    memo.assign(n + 1, -1);
+                    tree_edges.assign(n + 1, vector<int>());
+                    padre.assign(n + 1, -1);
+
+                    dfs(u, -1, ady_temporal);
+
+                    if (cubren(u, -1) == 0) {
+                        res[index] = "any";
+                    } else {
+                        res[index] = "at least one";
+                    }
+                } else {
+                    res[index] = "none";
+                }
+            }
+
+            for (int index : grupo_actual) {
                 int u = get<1>(aristas[index]);
                 int v = get<2>(aristas[index]);
 
